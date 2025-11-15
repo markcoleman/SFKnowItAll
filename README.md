@@ -2,6 +2,12 @@
 
 A Node.js application that integrates Salesforce Knowledge articles with Microsoft Copilot agents, providing intelligent knowledge retrieval and serving capabilities.
 
+## 📚 Quick Links
+
+- **[Microsoft Copilot Integration Guide](COPILOT_INTEGRATION.md)** - Complete setup instructions for Copilot
+- **[Quick Start for Copilot](QUICKSTART_COPILOT.md)** - Fast-track guide to get started
+- **[API Documentation](openapi.yaml)** - OpenAPI specification
+
 ## Features
 
 - 🔐 **Salesforce OAuth Integration**: Secure authentication with Salesforce using OAuth 2.0
@@ -10,6 +16,7 @@ A Node.js application that integrates Salesforce Knowledge articles with Microso
 - ⚡ **Caching Layer**: Built-in caching for improved performance
 - ✅ **Comprehensive Testing**: Full unit test coverage with Jest
 - 🔄 **CI/CD**: GitHub Actions workflows for automated testing and deployment
+- 🚀 **REST API Server**: Ready-to-deploy API for Microsoft Copilot integration
 
 ## Prerequisites
 
@@ -17,6 +24,7 @@ A Node.js application that integrates Salesforce Knowledge articles with Microso
 - npm or yarn
 - Salesforce account with API access
 - Salesforce Connected App credentials
+- (Optional) Express.js for API server: `npm install express cors`
 
 ## Installation
 
@@ -153,6 +161,244 @@ All external API calls are mocked to ensure fast, reliable tests.
 - Reviews dependencies on pull requests
 - Checks for security vulnerabilities
 - Fails on moderate or higher severity issues
+
+## Microsoft Copilot Integration
+
+This application serves as a backend service that Microsoft Copilot can query to retrieve Salesforce Knowledge articles. Here's how to integrate it:
+
+### Integration Options
+
+#### Option 1: REST API Service (Recommended)
+
+Deploy SFKnowItAll as a REST API service that Microsoft Copilot can call:
+
+1. **Create an API Wrapper** (example using Express.js):
+
+```javascript
+import express from 'express';
+import { SFKnowItAll } from './src/index.js';
+
+const app = express();
+app.use(express.json());
+
+// Initialize the application
+const sfApp = new SFKnowItAll();
+await sfApp.initialize();
+
+// Search endpoint for Copilot
+app.post('/api/search', async (req, res) => {
+  try {
+    const { query, maxResults = 5 } = req.body;
+    const results = await sfApp.search(query, maxResults);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Article details endpoint
+app.get('/api/article/:id', async (req, res) => {
+  try {
+    const article = await sfApp.getArticle(req.params.id);
+    res.json(article);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('SFKnowItAll API running on port 3000');
+});
+```
+
+2. **Deploy the Service**:
+   - Azure App Service
+   - AWS Lambda + API Gateway
+   - Google Cloud Run
+   - Docker container on any cloud platform
+
+3. **Configure Microsoft Copilot Plugin**:
+
+Create a `ai-plugin.json` manifest:
+
+```json
+{
+  "schema_version": "v1",
+  "name_for_human": "Salesforce Knowledge Search",
+  "name_for_model": "salesforce_knowledge",
+  "description_for_human": "Search Salesforce Knowledge articles",
+  "description_for_model": "Plugin for searching and retrieving Salesforce Knowledge articles. Use this when users ask questions that might be answered in your organization's knowledge base.",
+  "auth": {
+    "type": "service_http",
+    "authorization_type": "bearer",
+    "verification_tokens": {
+      "openai": "your-verification-token"
+    }
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://your-api-domain.com/openapi.yaml"
+  },
+  "logo_url": "https://your-domain.com/logo.png",
+  "contact_email": "support@your-domain.com",
+  "legal_info_url": "https://your-domain.com/legal"
+}
+```
+
+4. **Create OpenAPI Specification** (`openapi.yaml`):
+
+```yaml
+openapi: 3.0.0
+info:
+  title: Salesforce Knowledge API
+  version: 1.0.0
+  description: API for searching Salesforce Knowledge articles
+servers:
+  - url: https://your-api-domain.com
+paths:
+  /api/search:
+    post:
+      operationId: searchKnowledge
+      summary: Search for knowledge articles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Search query
+                maxResults:
+                  type: integer
+                  description: Maximum number of results
+                  default: 5
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                  count:
+                    type: integer
+                  timestamp:
+                    type: string
+  /api/article/{id}:
+    get:
+      operationId: getArticle
+      summary: Get article details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Article details
+```
+
+#### Option 2: Microsoft Teams Integration
+
+1. **Install Required Dependencies**:
+```bash
+npm install @microsoft/teams-ai botbuilder
+```
+
+2. **Create Teams Bot Integration**:
+
+```javascript
+import { Application } from '@microsoft/teams-ai';
+import { SFKnowItAll } from './src/index.js';
+
+const sfApp = new SFKnowItAll();
+await sfApp.initialize();
+
+const app = new Application({
+  // Bot configuration
+});
+
+app.message('/search', async (context, state) => {
+  const query = context.activity.text.replace('/search', '').trim();
+  const results = await sfApp.search(query);
+  
+  await context.sendActivity({
+    type: 'message',
+    text: formatResultsForTeams(results)
+  });
+});
+
+function formatResultsForTeams(results) {
+  return results.results.map(r => 
+    `**${r.title}**\n${r.summary}\n${r.url || ''}`
+  ).join('\n\n');
+}
+```
+
+#### Option 3: Copilot Studio Custom Connector
+
+1. **In Copilot Studio**:
+   - Navigate to your Copilot
+   - Go to "Settings" → "Generative AI" 
+   - Add a new "Custom connector"
+
+2. **Configure the Connector**:
+   - API Endpoint: Your deployed SFKnowItAll API
+   - Authentication: API Key or OAuth 2.0
+   - Define actions (search, getArticle)
+
+3. **Test the Integration**:
+   - Use the test console in Copilot Studio
+   - Ask questions like "Search for troubleshooting articles"
+   - Verify responses are formatted correctly
+
+### Security Best Practices
+
+When integrating with Microsoft Copilot:
+
+1. **Use HTTPS**: Always deploy with SSL/TLS certificates
+2. **Implement Authentication**: 
+   - API keys for service-to-service
+   - OAuth 2.0 for user-specific queries
+3. **Rate Limiting**: Protect your Salesforce API quota
+4. **Input Validation**: Sanitize all queries before processing
+5. **Audit Logging**: Track all queries for compliance
+
+### Example Copilot Prompts
+
+Once integrated, users can ask Microsoft Copilot:
+
+- "Search Salesforce Knowledge for password reset instructions"
+- "Find articles about VPN setup"
+- "What knowledge articles discuss email configuration?"
+- "Show me the latest troubleshooting guides"
+
+The Copilot will use your SFKnowItAll service to retrieve relevant articles and present them to the user.
+
+### Monitoring and Troubleshooting
+
+1. **Check Cache Statistics**:
+```javascript
+const stats = sfApp.getCacheStats();
+console.log(`Cache size: ${stats.size}`);
+```
+
+2. **Clear Cache if Needed**:
+```javascript
+sfApp.clearCache();
+```
+
+3. **Monitor Salesforce API Usage**:
+   - Check your Salesforce API limits regularly
+   - Implement retry logic for rate limit errors
+   - Use the cache to reduce API calls
 
 ## Salesforce Setup
 

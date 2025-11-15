@@ -1,0 +1,247 @@
+openapi: 3.0.0
+info:
+  title: SFKnowItAll - Salesforce Knowledge API
+  description: API for searching and retrieving Salesforce Knowledge articles via Microsoft Copilot
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@yourcompany.com
+
+servers:
+  - url: https://your-api-domain.com
+    description: Production server
+  - url: http://localhost:3000
+    description: Development server
+
+paths:
+  /api/search:
+    post:
+      summary: Search knowledge articles
+      operationId: searchKnowledge
+      description: Search for Salesforce Knowledge articles by query text. Returns formatted results ready for Microsoft Copilot consumption.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: The search query text
+                  example: "How to reset password"
+                maxResults:
+                  type: integer
+                  description: Maximum number of results to return (1-50)
+                  default: 5
+                  minimum: 1
+                  maximum: 50
+      responses:
+        '200':
+          description: Successful search
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Article ID
+                        title:
+                          type: string
+                          description: Article title
+                        summary:
+                          type: string
+                          description: Article summary
+                        url:
+                          type: string
+                          nullable: true
+                          description: Article URL path
+                  count:
+                    type: integer
+                    description: Number of results returned
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: Search timestamp
+              example:
+                results:
+                  - id: "ka0xx000000xxxx"
+                    title: "How to Reset Your Password"
+                    summary: "Step-by-step guide for password reset"
+                    url: "knowledge/article/password-reset"
+                count: 1
+                timestamp: "2024-01-01T12:00:00.000Z"
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Query parameter is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+
+  /api/article/{id}:
+    get:
+      summary: Get article details
+      operationId: getArticle
+      description: Retrieve detailed information about a specific knowledge article by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The Salesforce article ID
+          schema:
+            type: string
+          example: "ka0xx000000xxxx"
+      responses:
+        '200':
+          description: Article details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Article ID
+                  title:
+                    type: string
+                    description: Article title
+                  summary:
+                    type: string
+                    description: Article summary
+                  url:
+                    type: string
+                    nullable: true
+                    description: Article URL path
+                  publishStatus:
+                    type: string
+                    description: Article publish status
+                  lastModifiedDate:
+                    type: string
+                    format: date-time
+                    description: Last modification timestamp
+              example:
+                id: "ka0xx000000xxxx"
+                title: "VPN Setup Guide"
+                summary: "Complete guide for VPN configuration"
+                url: "knowledge/article/vpn-setup"
+                publishStatus: "Online"
+                lastModifiedDate: "2024-01-01T10:00:00.000Z"
+        '400':
+          description: Bad request - invalid article ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+
+  /api/cache/stats:
+    get:
+      summary: Get cache statistics
+      operationId: getCacheStats
+      description: Retrieve current cache statistics including size and entries
+      responses:
+        '200':
+          description: Cache statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  size:
+                    type: integer
+                    description: Number of cached entries
+                  entries:
+                    type: array
+                    items:
+                      type: string
+                    description: List of cache keys
+
+  /api/cache/clear:
+    post:
+      summary: Clear cache
+      operationId: clearCache
+      description: Clear all cached search results
+      responses:
+        '200':
+          description: Cache cleared successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      description: Check if the API server is running and healthy
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Optional API key for authenticated requests
+
+# Uncomment to enable API key security
+# security:
+#   - ApiKeyAuth: []
