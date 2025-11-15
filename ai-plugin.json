@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Salesforce Knowledge",
+  "name_for_model": "salesforce_knowledge",
+  "description_for_human": "Search and retrieve Salesforce Knowledge articles to answer support questions and provide help documentation.",
+  "description_for_model": "Plugin for searching and retrieving Salesforce Knowledge Base articles. Use this when users ask questions that might be documented in knowledge articles, help documentation, FAQs, or troubleshooting guides. The plugin can search articles by keywords and retrieve detailed article content. Always provide relevant article titles and summaries to help users find the information they need.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://your-api-domain.com/openapi.yaml",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://your-domain.com/logo.png",
+  "contact_email": "support@yourcompany.com",
+  "legal_info_url": "https://your-domain.com/legal"
+}
