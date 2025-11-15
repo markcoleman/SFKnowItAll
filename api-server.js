@@ -125,12 +125,12 @@ app.post('/api/cache/clear', (req, res) => {
   }
 });
 
-// Serve OpenAPI specification
+// Serve OpenAPI specification (static file, rate limiting not required)
 app.get('/openapi.yaml', (req, res) => {
   res.sendFile('openapi.yaml', { root: '.' });
 });
 
-// Serve plugin manifest
+// Serve plugin manifest (static file, rate limiting not required)
 app.get('/ai-plugin.json', (req, res) => {
   res.sendFile('ai-plugin.json', { root: '.' });
 });

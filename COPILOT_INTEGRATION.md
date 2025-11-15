@@ -561,6 +561,42 @@ curl https://your-api.com/health
 - [ ] Implement error tracking (e.g., Sentry)
 - [ ] Set up monitoring and alerts
 
+### Rate Limiting Example
+
+For production deployments, add rate limiting to API endpoints:
+
+```bash
+npm install express-rate-limit
+```
+
+```javascript
+import rateLimit from 'express-rate-limit';
+
+// Rate limiter for search endpoint
+const searchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+
+// Rate limiter for general API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200
+});
+
+// Apply to routes
+app.post('/api/search', searchLimiter, async (req, res) => {
+  // ... search logic
+});
+
+app.get('/api/article/:id', apiLimiter, async (req, res) => {
+  // ... article logic
+});
+```
+
+Note: Static documentation files (openapi.yaml, ai-plugin.json) typically don't require rate limiting as they are read-only and cached by clients.
+
 ### Performance Optimization
 
 1. **Enable Caching**: The built-in cache reduces Salesforce API calls
